@@ -1,8 +1,6 @@
 import javax.xml.parsers.*;
 import java.io.*;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.StringTokenizer;
+import java.util.*;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -21,18 +19,23 @@ public class Ex1 {
             BufferedReader br=new BufferedReader(fr);  //creates a buffering character input stream
             String xmlFile = br.readLine();
             String line;
-            loadXml(xmlFile);
-            return;
-            //PrepareNetwork;
-            /*
+            BaysianNetwork bn = loadXml(xmlFile);
             while((line=br.readLine())!=null)
             {
                 int method = line.charAt(line.length()-1) -'0';
-                String query = line.substring(0, line.length()-2);
+                String query = line.substring(2, line.length()-4);
+                if (method == 1){
+                    bn.simpleConc(query);
+                } else if (method == 2) {
+
+                }
+                else{ //method == 3
+
+                }
                 //int result = ActivateNework(query);
                 //WriteResaultToOutpiut(result);
             }
-            fr.close(); */   //closes the stream and release the resources
+            fr.close();    //closes the stream and release the resources
         }
         catch(IOException e)
         {
@@ -41,7 +44,7 @@ public class Ex1 {
 
     }
 
-    public static void  loadXml(String xmlFile){
+    public static BaysianNetwork  loadXml(String xmlFile){
         File inputFile = new File(xmlFile);
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -57,6 +60,7 @@ public class Ex1 {
             int capacity = 0;
 
             Hashtable<String, Integer> varOutcomes = new Hashtable<String, Integer>();
+            HashSet[] caloprec =new HashSet[variables.length];
             for (int temp = 0; temp < vars.getLength(); temp++) {
                 NodeList varEleme = vars.item(temp).getChildNodes();
                 String name = null;
@@ -68,7 +72,7 @@ public class Ex1 {
                 for (int i = 2; i < varEleme.getLength(); i++)
                 {
                     if (varEleme.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                        //eledef.append(varEleme.item(i).getTextContent());
+                        caloprec[capacity].add(varEleme.item(i).getTextContent());
                         //System.out.println(varEleme.item(i).getTextContent());
                         outcomes++;
                     }
@@ -85,6 +89,9 @@ public class Ex1 {
 
             Hashtable<String, Double[]> CPTs = createCPTs(vardepend, variables,  varOutcomes,  def);
             System.out.println(CPTs.toString());
+
+            BaysianNetwork bn = new BaysianNetwork(varOutcomes, CPTs, variables, caloprec);
+            return bn;
 
         } catch (ParserConfigurationException | SAXException | IOException e) {
             throw new RuntimeException(e);
