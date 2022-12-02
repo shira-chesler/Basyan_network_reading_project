@@ -14,7 +14,7 @@ public class Ex1 {
     public static void main(String[] args) {
         try
         {
-            File file=new File("input.txt");    //creates a new file instance
+            File file=new File("C:/proj/Basyan_network_reading_project/Ex1/src/input.txt");  //creates a new file instance
             FileReader fr=new FileReader(file);   //reads the file
             BufferedReader br=new BufferedReader(fr);  //creates a buffering character input stream
             String xmlFile = br.readLine();
@@ -23,15 +23,8 @@ public class Ex1 {
             while((line=br.readLine())!=null)
             {
                 int method = line.charAt(line.length()-1) -'0';
-                String query = line.substring(2, line.length()-4);
-                if (method == 1){
-                    bn.simpleConc(query);
-                } else if (method == 2) {
-
-                }
-                else{ //method == 3
-
-                }
+                String query = line.substring(2, line.length()-3);
+                bn.execute(method, query);
                 //int result = ActivateNework(query);
                 //WriteResaultToOutpiut(result);
             }
@@ -56,41 +49,38 @@ public class Ex1 {
             Element root = (Element)rootList.item(0);
             NodeList vars = root.getElementsByTagName("VARIABLE");
 
-            String variables[] = new String[vars.getLength()];
+            String[] variables = new String[vars.getLength()];
             int capacity = 0;
 
-            Hashtable<String, Integer> varOutcomes = new Hashtable<String, Integer>();
-            HashSet[] caloprec =new HashSet[variables.length];
+            Hashtable<String, Integer> nVarOutcomes = new Hashtable<>();
+            String[][] caloprec =new String[vars.getLength()][];
             for (int temp = 0; temp < vars.getLength(); temp++) {
-                NodeList varEleme = vars.item(temp).getChildNodes();
-                String name = null;
-                if (varEleme.item(1).getNodeType() == Node.ELEMENT_NODE) {
-                    name = (varEleme.item(1).getTextContent());
-                }
+                String name = ((Element)vars.item(temp)).getElementsByTagName("NAME").item(0).getTextContent();
+                NodeList varEleme = ((Element)(vars.item(temp))).getElementsByTagName("OUTCOME");
                 variables[capacity] = name;
                 int outcomes = 0;
-                for (int i = 2; i < varEleme.getLength(); i++)
+                caloprec[capacity] = new String[varEleme.getLength()];
+                for (int i = 0; i < varEleme.getLength(); i++)
                 {
                     if (varEleme.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                        caloprec[capacity].add(varEleme.item(i).getTextContent());
-                        //System.out.println(varEleme.item(i).getTextContent());
+                        caloprec[capacity][i] = (varEleme.item(i).getTextContent());
                         outcomes++;
                     }
                 }
-                varOutcomes.put(name, outcomes);
+                nVarOutcomes.put(name, outcomes);
                 capacity++;
             }
             System.out.println(Arrays.toString(variables));
-            System.out.println(varOutcomes.toString());
+            System.out.println(nVarOutcomes.toString());
 
             NodeList def = root.getElementsByTagName("DEFINITION");
             Hashtable<String, String> vardepend = getCPTname(def);
             System.out.println(vardepend.toString());
 
-            Hashtable<String, Double[]> CPTs = createCPTs(vardepend, variables,  varOutcomes,  def);
+            Hashtable<String, Double[]> CPTs = createCPTs(vardepend, variables,  nVarOutcomes,  def);
             System.out.println(CPTs.toString());
 
-            BaysianNetwork bn = new BaysianNetwork(varOutcomes, CPTs, variables, caloprec);
+            BaysianNetwork bn = new BaysianNetwork(nVarOutcomes, CPTs, variables, caloprec);
             return bn;
 
         } catch (ParserConfigurationException | SAXException | IOException e) {
@@ -100,7 +90,7 @@ public class Ex1 {
 
     }
     public static Hashtable<String, String> getCPTname(NodeList def){
-        Hashtable<String, String> vardepend = new Hashtable<String, String>();
+        Hashtable<String, String> vardepend = new Hashtable<>();
         for (int temp = 0; temp < def.getLength(); temp++) {
             NodeList cpt = def.item(temp).getChildNodes();
             String variable = null;
@@ -126,22 +116,24 @@ public class Ex1 {
         return vardepend;
     }
 
-    public static Hashtable<String, Double[]> createCPTs(Hashtable<String,String> vardepend, String[] variables, Hashtable<String, Integer> varOutcomes, NodeList def){
+    public static Hashtable<String, Double[]> createCPTs(Hashtable<String,String> vardepend, String[] variables, Hashtable<String, Integer> nVarOutcomes, NodeList def){
         Hashtable<String, Double[]> CPTs = new Hashtable<>();
         int var_num = variables.length;
         for (int i=0; i<var_num; i++){
             String var = variables[i];
             StringBuilder CPTname = new StringBuilder(var+"|");
-            int CPTsize = varOutcomes.get(var);
+            int CPTsize = nVarOutcomes.get(var);
             StringTokenizer dep = new StringTokenizer(vardepend.get(var), "-");
-            //System.out.println(dep.nextToken().toString());
             String s = null;
             if(dep.hasMoreTokens()){
                 s = dep.nextToken();
             }
-            while (s!=null && varOutcomes.get(s)!=null){
-                CPTsize*=varOutcomes.get(s);
-                CPTname.append(s+", ");
+            if (s==null){
+                CPTname.deleteCharAt(CPTname.length()-1);
+            }
+            while (s!=null && nVarOutcomes.get(s)!=null){
+                CPTsize*=nVarOutcomes.get(s);
+                CPTname.append(s+",");
                 if (dep.hasMoreTokens()){
                     s = dep.nextToken();
                 }
