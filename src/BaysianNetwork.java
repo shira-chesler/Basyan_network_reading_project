@@ -30,6 +30,7 @@ public class BaysianNetwork {
             case 1:
                 SimpleConc sc = new SimpleConc(this.varOutcomes, this.CPTs, this.variables, this.varopls);
                 sc.simpleConc(query);
+                sc.cleanOp();
                 break;
             case 2:
                 VarEliminiationByABC vebabc = new VarEliminiationByABC(this.varOutcomes, this.CPTs, this.variables, this.varopls);
