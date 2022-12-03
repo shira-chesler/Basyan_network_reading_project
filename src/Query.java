@@ -43,6 +43,7 @@ public class Query{
 
     public void changeOptions(int idx_to_change, String value){
         ex_options.forEach((arr) -> {arr[idx_to_change] = value;});
+        this.value = value;
     }
 
 }

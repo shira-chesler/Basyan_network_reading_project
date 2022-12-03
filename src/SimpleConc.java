@@ -32,7 +32,7 @@ public class SimpleConc extends BaysianNetwork{
                 num_of_sum++;
             }
         }
-        double normalize_fac = (desprobability + opprobability)/ num_of_options; //we should have done num_of_sum-- then num_of_sum++
+        double normalize_fac = (desprobability + opprobability); //we should have done num_of_sum-- then num_of_sum++
         desprobability /= normalize_fac;
         System.out.println(desprobability+","+num_of_sum+","+num_of_mul);
     }
@@ -68,7 +68,7 @@ public class SimpleConc extends BaysianNetwork{
             Enumeration<String> keys = CPTs.keys();
             while (keys.hasMoreElements()){ //gets the probability of each combination and multiples them
                 String key = keys.nextElement();
-                cur_combination*=getP(key, CPTs.get(key) ,option ,cur_combination);
+                cur_combination=getP(key, CPTs.get(key) ,option ,cur_combination);
             }
             num_of_mul--; //for the first time - we multiplied a probability with 1
             sum+=cur_combination;
