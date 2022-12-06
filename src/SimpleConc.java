@@ -1,3 +1,5 @@
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -9,14 +11,7 @@ public class SimpleConc extends BaysianNetwork{
     public SimpleConc(Hashtable<String, Integer> varOutcomes, Hashtable<String, Double[]> CPTs, String[] variables, String[][] varopls) {
         super(varOutcomes, CPTs, variables, varopls);
     }
-    public void simpleConc(String query){ //simple conclusion operation
-        StringTokenizer readquery = new StringTokenizer(query, " ,|=");
-        Hashtable<String, String> given = new Hashtable<>();
-        Query ourq = new Query(readquery.nextToken(), readquery.nextToken()); //seperates the query
-        while (readquery.hasMoreTokens()){
-            given.put(readquery.nextToken(),readquery.nextToken()); //putting the evidences into the HashTable
-        }
-        ourq.addEvidence(given);
+    public void simpleConc(Query ourq){ //simple conclusion operation
         String[] temp_op = new String[this.variables.length]; //temporary array to calculate all possible variables combinations
         calOpRec(temp_op, 0, ourq);
         int idx_of_q = findIndex(variables, ourq.getVar()); //finds the index of query in variables
@@ -34,6 +29,9 @@ public class SimpleConc extends BaysianNetwork{
         }
         double normalize_fac = (desprobability + opprobability); //we should have done num_of_sum-- then num_of_sum++
         desprobability /= normalize_fac;
+        //DecimalFormat df = new DecimalFormat("#.#####");
+        //df.setRoundingMode(RoundingMode.CEILING);
+        //System.out.println(df.format(desprobability)+","+num_of_sum+","+num_of_mul);
         System.out.println(desprobability+","+num_of_sum+","+num_of_mul);
     }
 
@@ -132,3 +130,7 @@ public class SimpleConc extends BaysianNetwork{
         this.num_of_mul = 0;
     }
 }
+
+/*
+להוסיף - מה קורה אם זה בדיוק תא בטבלה, פשוט תשלוף את זה
+ */

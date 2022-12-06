@@ -7,6 +7,7 @@ public class VarEliminationByHuristic extends BaysianNetwork{
         super(varOutcomes, CPTs, variables, varopls);
     }
 
-    public void variableEliminationByHuristic(String query) {
+    public void variableEliminationByHuristic(Query ourq) {
+
     }
 }
