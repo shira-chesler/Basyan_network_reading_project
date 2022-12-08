@@ -165,8 +165,33 @@ public class VarEliminiationByABC extends BaysianNetwork{
 
     public void join(String varname){
         HashSet cptswithvar = cptsWithVar(varname); //contains the names of the cpts with the var
+        int size = cptswithvar.size();
+        String[][] namesizecpts = new String[size][3];
         Iterator iter = cptswithvar.iterator();
+        for (int i = 0; i < namesizecpts.length; i++) {
+            namesizecpts[i][0] = (String) iter.next(); //name of cpt
+            namesizecpts[i][1] = String.valueOf(this.CPTs.get(namesizecpts[i][0]).length);//length of cpt
+            namesizecpts[i][2] = String.valueOf(asciiSumOsCPT(namesizecpts[i][0]));
+        }
+        java.util.Arrays.sort(namesizecpts, new java.util.Comparator<>() {
+            public int compare(String[] a, String[] b) {
+                return Integer.compare(Integer.parseInt(a[1]), Integer.parseInt(b[1]));
+            }
+        });
 
+
+    }
+
+    public int asciiSumOsCPT(String s) {
+        StringTokenizer parts = new StringTokenizer(s, " ,|=");
+        int ascii_sum = 0;
+        while (parts.hasMoreTokens()){
+            char[] temp = parts.nextToken().toCharArray();
+            for (char ch: temp){
+                ascii_sum +=(int) ch;
+            }
+        }
+        return ascii_sum;
     }
 
     public HashSet<String>[] commonDiffVars(String cpt1, String cpt2){
