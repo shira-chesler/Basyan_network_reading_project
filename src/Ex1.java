@@ -1,5 +1,7 @@
 import javax.xml.parsers.*;
 import java.io.*;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.*;
 
 import org.w3c.dom.Document;
@@ -14,7 +16,7 @@ public class Ex1 {
     public static void main(String[] args) {
         try
         {
-            File file=new File("C:/proj/Basyan_network_reading_project/Ex1/src/input.txt");  //creates a new file instance
+            File file=new File("C:\\Users\\shira_chesler\\IdeaProjects\\Basyan_network_reading_project\\src\\input.txt");  //creates a new file instance
             FileReader fr=new FileReader(file);   //reads the file
             BufferedReader br=new BufferedReader(fr);  //creates a buffering character input stream
             String xmlFile = br.readLine();
@@ -25,8 +27,7 @@ public class Ex1 {
                 int method = line.charAt(line.length()-1) -'0';
                 String query = line.substring(2, line.length()-3);
                 bn.execute(method, query);
-                //int result = ActivateNework(query);
-                //WriteResaultToOutpiut(result);
+                //WriteResaultToOutput(result);
             }
             fr.close();    //closes the stream and release the resources
         }
@@ -42,7 +43,6 @@ public class Ex1 {
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = null;
-
             dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.parse(inputFile);
             NodeList rootList = doc.getElementsByTagName("NETWORK");
@@ -178,3 +178,8 @@ public class Ex1 {
         return CPTs;
     }
 }
+/*
+דברים לסוף:
+גרסת ג'אבה נכונה
+כתיבה לקובץ
+ */

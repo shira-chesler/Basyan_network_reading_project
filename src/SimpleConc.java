@@ -12,6 +12,9 @@ public class SimpleConc extends BaysianNetwork{
         super(varOutcomes, CPTs, variables, varopls);
     }
     public void simpleConc(Query ourq){ //simple conclusion operation
+        if(queryInCPT(ourq)){
+            return;
+        }
         String[] temp_op = new String[this.variables.length]; //temporary array to calculate all possible variables combinations
         calOpRec(temp_op, 0, ourq);
         int idx_of_q = findIndex(variables, ourq.getVar()); //finds the index of query in variables
@@ -29,10 +32,9 @@ public class SimpleConc extends BaysianNetwork{
         }
         double normalize_fac = (desprobability + opprobability); //we should have done num_of_sum-- then num_of_sum++
         desprobability /= normalize_fac;
-        //DecimalFormat df = new DecimalFormat("#.#####");
-        //df.setRoundingMode(RoundingMode.CEILING);
-        //System.out.println(df.format(desprobability)+","+num_of_sum+","+num_of_mul);
-        System.out.println(desprobability+","+num_of_sum+","+num_of_mul);
+        DecimalFormat df = new DecimalFormat("#.#####");
+        df.setRoundingMode(RoundingMode.HALF_UP);
+        System.out.println(Double.valueOf(df.format(desprobability))+","+num_of_sum+","+num_of_mul);
     }
 
 
@@ -82,7 +84,8 @@ public class SimpleConc extends BaysianNetwork{
 
     public double getP(String S, Double[] arr, String[] option, double cur_combination) {
         int var_idx = 0;
-        if (S.length() == 1) {
+        String[] vars_inCPT = S.split("[| -,]"); //array of variables involved
+        if (vars_inCPT.length == 1) {
             var_idx = findIndex(variables, S); //finds the index of variable
             for (int i = 0; i < varopls[var_idx].length; i++) {
                 if (varopls[var_idx][i].equals(option[var_idx])) { //finds the index of wanted value in value options
@@ -93,12 +96,11 @@ public class SimpleConc extends BaysianNetwork{
         }
         else{//CPT name is bigger than 1, which means there are givens
             int offset=0;
-            String[] vars_inCPT = S.split("[| -,]"); //array of variables involved
             for(int var = 1; var < vars_inCPT.length; var++){ //iterates through variables involved, excluding the "main" var of the CPT
                 var_idx = findIndex(variables, vars_inCPT[var]); //gets the index of variable
                 for (int i = 0; i < varopls[var_idx].length; i++) {
                     if (varopls[var_idx][i].equals(option[var_idx])) { //finds the position of wanted value
-                        offset+= Math.pow(varOutcomes.get(vars_inCPT[var]), vars_inCPT.length-var) * i; //in what area of the CPT we want to be with this variable
+                        offset+= basePosition(vars_inCPT, var+1) * i; //in what area of the CPT we want to be with this variable
                     }
                 }
             }
@@ -114,17 +116,13 @@ public class SimpleConc extends BaysianNetwork{
         return cur_combination;
     }
 
-    public int findIndex(String[] arr, String wanted_value){
-        int index=-1;
-        for (int i = 0; i < arr.length; i++) {
-            if (arr[i].equals(wanted_value)){
-                index = i;
-                break;
-            }
+    private int basePosition(String[] vars_inCPT, int start_index){
+        int mul = varOutcomes.get(vars_inCPT[0]);//can't forget the first variable (the main, which is the first in cpt)
+        for (int i = start_index; i < vars_inCPT.length; i++) {
+            mul*=varOutcomes.get(vars_inCPT[i]);
         }
-        return index;
+        return mul;
     }
-
     public void cleanOp() {
         this.num_of_sum = 0;
         this.num_of_mul = 0;
