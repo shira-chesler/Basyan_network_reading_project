@@ -259,6 +259,10 @@ public class VarEliminiationByABC extends BaysianNetwork{
         HashSet taken = new HashSet();
         capacity=0;
         while (loc<final_factor.length){
+            if (taken.contains(loc)){
+                loc++;
+                continue;
+            }
             taken.add(loc);
             int rowloc = 0;//col
             int place = 0;
@@ -275,11 +279,14 @@ public class VarEliminiationByABC extends BaysianNetwork{
             double sum = parseDouble(final_factor[loc][rowloc]);
             int numofiteratiomsums=1;
             boolean b = false;
-            for (int i = 0; i < final_factor.length; i++) {
-                if(numofiteratiomsums==this.varOutcomes.get(varname)){
+            for (int i = 1; i < final_factor.length; i++) {
+                if(taken.contains(i)){
+                    continue;
+                }
+                if(numofiteratiomsums==this.varOutcomes.get(varname)){ //means we sumed all the rows that contained this option
                     break;
                 }
-                if (!taken.contains(i) && compareWithoutCol(sum_together, final_factor[i], col_num)){
+                if (compareWithoutCol(sum_together, final_factor[i], col_num)){
                     sum+=parseDouble(final_factor[i][rowloc]);
                     num_of_sum++;
                     numofiteratiomsums++;
@@ -302,7 +309,7 @@ public class VarEliminiationByABC extends BaysianNetwork{
     private boolean compareWithoutCol(String[] sumTogether, String[] strings, int colNum) {
         boolean b = true;
         int j = 0;
-        for (int i = 0; i < sumTogether.length-1; i++) {
+        for (int i = 0; i < strings.length-1; i++) {
             if (i==colNum){
                 continue;
             }
