@@ -16,20 +16,39 @@ public class Ex1 {
     public static void main(String[] args) {
         try
         {
-            File file=new File("C:\\Users\\shira_chesler\\IdeaProjects\\Basyan_network_reading_project\\src\\input.txt");  //creates a new file instance
+            String PREFIX = "C:\\Users\\shira_chesler\\IdeaProjects\\Basyan_network_reading_project\\src\\";
+            /*File outFile = new File("output.txt");
+            outFile.delete();
+            if (!outFile.createNewFile())
+            {
+                System.out.println("Failed to create output file");
+                return;
+            }*/
+            FileWriter fw = null;
+            BufferedWriter bw = null;
+            PrintWriter pw = null;
+
+            fw = new FileWriter("output.txt");
+            bw = new BufferedWriter(fw);
+            pw = new PrintWriter(bw);
+
+            File file=new File("input.txt");  //creates a new file instance
             FileReader fr=new FileReader(file);   //reads the file
             BufferedReader br=new BufferedReader(fr);  //creates a buffering character input stream
             String xmlFile = br.readLine();
             String line;
-            BaysianNetwork bn = loadXml(xmlFile);
+            BaysianNetwork bn = loadXml(xmlFile, pw);
             while((line=br.readLine())!=null)
             {
                 int method = line.charAt(line.length()-1) -'0';
                 String query = line.substring(2, line.length()-3);
                 bn.execute(method, query);
-                //WriteResaultToOutput(result);
             }
             fr.close();    //closes the stream and release the resources
+            pw.flush();
+            pw.close();
+            bw.close();
+            fw.close();
         }
         catch(IOException e)
         {
@@ -38,7 +57,7 @@ public class Ex1 {
 
     }
 
-    public static BaysianNetwork  loadXml(String xmlFile){
+    public static BaysianNetwork  loadXml(String xmlFile, PrintWriter pw){
         File inputFile = new File(xmlFile);
         try {
             DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -80,7 +99,7 @@ public class Ex1 {
             Hashtable<String, Double[]> CPTs = createCPTs(vardepend, variables,  nVarOutcomes,  def);
             System.out.println(CPTs.toString());
 
-            BaysianNetwork bn = new BaysianNetwork(nVarOutcomes, CPTs, variables, caloprec);
+            BaysianNetwork bn = new BaysianNetwork(nVarOutcomes, CPTs, variables, caloprec, pw);
             return bn;
 
         } catch (ParserConfigurationException | SAXException | IOException e) {
