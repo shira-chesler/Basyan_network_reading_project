@@ -104,7 +104,7 @@ public class VarEliminationByHeuristic extends VariableElimination{
      * @param ourq - a "Query" type object, with the parameters of the query we want to calculate.
      * @param calculated - HashSet of al variables that have already been calculated.
      * @return an array, in entrance i in the array there is the number of fathers that haven't
-     * been calculated yet of variable[i]
+     * been calculated yet of variable[i].
      */
     private int[] initializeNumImSon(Query ourq, HashSet<String> calculated) {
         int[] myFathers = new int[this.variables.length];
