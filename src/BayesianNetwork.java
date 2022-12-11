@@ -3,7 +3,7 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.*;
 
-public class BaysianNetwork {
+public class BayesianNetwork {
     private boolean isinCPT=false;
     protected final String[] initial_variables;
     protected final Hashtable<String, Integer> initial_varOutcomes;
@@ -13,7 +13,16 @@ public class BaysianNetwork {
     protected int num_of_sum=0;
     protected PrintWriter pw;
 
-    public BaysianNetwork(Hashtable<String, Integer> varOutcomes, Hashtable<String, Double[]> CPTs, String[] variables, String[][] varopls, PrintWriter pw){
+    /**
+     * BayesianNetwork constructor.
+     * @param varOutcomes - HashTable of number of outcomes for each variable in the network.
+     * @param CPTs - HashTable of (so called) CPTs in the network.
+     * @param variables - array of all variables in network.
+     * @param varopls - array of array, each array contains all the possible outcomes for a specific variable,
+     *                indexed respectively to variables.
+     * @param pw - PrintWriter object.
+     */
+    public BayesianNetwork(Hashtable<String, Integer> varOutcomes, Hashtable<String, Double[]> CPTs, String[] variables, String[][] varopls, PrintWriter pw){
         this.initial_varOutcomes = varOutcomes;
         this.initial_CPTs = CPTs;
         this.initial_variables = variables;
@@ -21,6 +30,11 @@ public class BaysianNetwork {
         this.pw = pw;
     }
 
+    /**
+     * Makes the query with makequery function, then by given method, sends the query and calculate it.
+     * @param method - int that indicates by what method we should calculate the query.
+     * @param query - String of the query (with the evidences).
+     */
     public void execute(int method, String query){
         Query ourq = makequery(query);
         switch (method) {
@@ -42,25 +56,16 @@ public class BaysianNetwork {
                 vebh.variableEliminationByHuristic(ourq);
                 break;
             }
-            case 4:
-            {
-                HashSet<String[]> set = new HashSet<>();
-                String[] temp = new String[this.initial_variables.length];
-                calcVarsOp(initial_variables,0, set, temp);
-                int count = 1;
-                Iterator iter = set.iterator();
-                while (iter.hasNext()){
-                    Expiriment ex = new Expiriment(this.initial_varOutcomes, this.initial_CPTs, this.initial_variables, this.initial_varopls, this.pw);
-                    boolean b =ex.variableEliminationex(ourq, (String[]) iter.next());
-                    if (b){
-                        System.out.println(count);
-                        count++;
-                    }
-                }
-            }
         }
     }
 
+    /**
+     * splits the query string, then puts inside a Query object the desired variable query, its value and a
+     * HashTable of all the given evidences (when the key is the evidence variable and the value is its given
+     * value).
+     * @param query - String of the query (with the evidences).
+     * @return an object of type "Query".
+     */
     private Query makequery(String query){
         StringTokenizer readquery = new StringTokenizer(query, " ,|=");
         Hashtable<String, String> given = new Hashtable<>();
@@ -72,16 +77,24 @@ public class BaysianNetwork {
         return ourq;
     }
 
+    /**
+     * The function runs on all the CPTs. For each CPT, it checks if it's the query's CPT, and if it is,
+     * it checks if all the evidence variables are in this CPT, and there aren't anymore variables in CPT.
+     * If this is true, it means all the query is contained within the CPT, then it searches for the specific
+     * place of the query in CPT and prints it.
+     * @param ourq - Query object, the current query we're trying to calculate.
+     * @return boolean indication - if there's a CPt that already contains the whole query (means there's no
+     * need to calculate anything).
+     */
     protected boolean queryInCPT(Query ourq){
         initial_CPTs.forEach((name, table) ->
         {
             boolean b_temp = true;
             StringTokenizer parts = new StringTokenizer(name, " ,|=");
-            if (parts.nextToken().equals(ourq.getVar())){
-                if(ourq.getEvidence().size()+1==name.length()/2){//num of vars in query+evidence against number of vars in cpt
-                    Iterator iter = ourq.getEvidence().keySet().iterator();
-                    while (iter.hasNext()) {
-                        if (contains(name, (String) iter.next()) == 0) {
+            if (parts.nextToken().equals(ourq.getVar())){ //means we're in the query's CPT
+                if(ourq.getEvidence().size()+1==name.length()/2){//num of vars in query+evidence = number of vars in cpt
+                    for (String s : ourq.getEvidence().keySet()) {
+                        if (contains(name, s) == 0) {
                             b_temp = false;
                             break;
                         }
@@ -94,7 +107,7 @@ public class BaysianNetwork {
                             var_idx = findIndex(initial_variables, vars_inCPT[var]); //gets the index of variable
                             for (int i = 0; i < initial_varopls[var_idx].length; i++) {
                                 if (initial_varopls[var_idx][i].equals(ourq.getEvidence().get(vars_inCPT[var]))) { //finds the position of wanted value
-                                    offset+= Math.pow(initial_varOutcomes.get(vars_inCPT[var]), vars_inCPT.length-var) * i; //in what area of the CPT we want to be with this variable
+                                    offset+= basePosition(vars_inCPT, var+1) * i; //in what area of the CPT we want to be with this variable
                                 }
                             }
                         }
@@ -104,9 +117,9 @@ public class BaysianNetwork {
                                 offset+= i;
                             }
                         }
-                        DecimalFormat df = new DecimalFormat("#.#####");
+                        DecimalFormat df = new DecimalFormat("#.#####"); //prints it as required - 5 point after '.'
                         df.setRoundingMode(RoundingMode.HALF_UP);
-                        System.out.printf(Double.valueOf(df.format(table[offset]))+","+0+","+0);
+                        pw.print(Double.valueOf(df.format(table[offset]))+","+0+","+0);
                         this.isinCPT = true;
                     }
                 }
@@ -116,10 +129,18 @@ public class BaysianNetwork {
             this.isinCPT = false;
             return true;
         }
-        return this.isinCPT;
+        return false;
     }
 
-    protected int contains(String origin, String isin){//return which var num in the cpt the var we're searching is
+    /**
+     * The function splits the given String by delimiters ",|=", and the searches for the desirable
+     * substring.
+     * @param origin - string we're searching in.
+     * @param isin - the string we're searching for.
+     * @return what substring number in the sting we're given is the substring we're searching for. If the
+     * variable does not exist in the given name, it returns 0.
+     */
+    protected int contains(String origin, String isin){
         boolean b = false;
         int varnum = 0;
         StringTokenizer parts = new StringTokenizer(origin, ",|=");
@@ -136,6 +157,12 @@ public class BaysianNetwork {
         return 0;
     }
 
+    /**
+     * The function Scans arr for wanted_value.
+     * @param arr - array of strings.
+     * @param wanted_value - string we want to find in arr.
+     * @return If wanted_value exists in arr - returns its index in arr. Else - returns -1.
+     */
     protected int findIndex(String[] arr, String wanted_value){
         int index=-1;
         for (int i = 0; i < arr.length; i++) {
@@ -150,33 +177,20 @@ public class BaysianNetwork {
         return index;
     }
 
-    public void calcVarsOp(String[] arr, int idx, HashSet<String[]> options, String[] temp){
-        if (idx>=arr.length){
-            options.add(temp.clone());
-            return;
+    /**
+     * the function multiplies the number of outcomes of each one of the variables the changes "faster"
+     * then vars_inCPT[start_index-1] in CPT. this number gives us the change rate of vars_inCPT[start_index-1].
+     * @param vars_inCPT - array of the vars in the CPT.
+     * @param start_index - what index we want to start from (from which variable to start to calculate).
+     * @return the changing rate of values in CPT for the variable vars_inCPT[start_index-1]
+     */
+    protected int basePosition(String[] vars_inCPT, int start_index){
+        int mul = initial_varOutcomes.get(vars_inCPT[0]);//can't forget the first variable (the main, which is the first in cpt)
+        for (int i = start_index; i < vars_inCPT.length; i++) {
+            mul*=initial_varOutcomes.get(vars_inCPT[i]);
         }
-        else {
-            for (int i=0; i<arr.length; i++){
-                if (containsaar(temp, arr[i])){
-                    continue;
-                }
-                temp[idx] = arr[i];
-                calcVarsOp(arr, idx+1, options, temp);
-            }
-            temp[idx] = null;
-        }
+        return mul;
     }
-
-    private boolean containsaar(String[] temp, String s) {
-        for (int i = 0; i < temp.length; i++) {
-            if (s.equals(temp[i])){
-                return true;
-            }
-
-        }
-        return false;
-    }
-
 
 }
 

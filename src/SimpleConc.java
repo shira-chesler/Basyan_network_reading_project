@@ -4,12 +4,29 @@ import java.text.DecimalFormat;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Iterator;
-import java.util.StringTokenizer;
 
-public class SimpleConc extends BaysianNetwork{
+public class SimpleConc extends BayesianNetwork {
+
+    /**
+     * SimpleConc (shortage for SimpleConclusion) constructor.
+     * @param varOutcomes - HashTable of number of outcomes for each variable in the network.
+     * @param CPTs - HashTable of (so called) CPTs in the network.
+     * @param variables - array of all variables in network.
+     * @param varopls - array of array, each array contains all the possible outcomes for a specific variable,
+     *                indexed respectively to variables.
+     * @param pw - PrintWriter object.
+     */
     public SimpleConc(Hashtable<String, Integer> varOutcomes, Hashtable<String, Double[]> CPTs, String[] variables, String[][] varopls, PrintWriter pw) {
         super(varOutcomes, CPTs, variables, varopls, pw);
     }
+
+    /**
+     * The function checks if the query needs to be calculated (with queryInCPT method). If it does, it
+     * calculates all the possible outcomes option with calOpRec function. Then finds the probability for
+     * the query value we want, normalizes it with the query values we don't want, and prints the probability,
+     * the number of sums and the number of multiplications done in the whole operation.
+     * @param ourq - a "Query" type object, with the parameters of the query we want to calculate.
+     */
     public void simpleConc(Query ourq){ //simple conclusion operation
         if(queryInCPT(ourq)){
             return;
@@ -23,8 +40,7 @@ public class SimpleConc extends BaysianNetwork{
         desprobability = calculateOpInQuery(ourq); //desired probability
         int num_of_options = initial_varopls[idx_of_q].length;//options of outcomes in query
         for (int i = 0; i < num_of_options; i++) {
-            if(i==index_of_value) continue;
-            else{
+            if(i!=index_of_value) {
                 opprobability += calculateOpposite(ourq, idx_of_q, i); //calculating all the other value options of the query
                 num_of_sum++;
             }
@@ -33,14 +49,20 @@ public class SimpleConc extends BaysianNetwork{
         desprobability /= normalize_fac;
         DecimalFormat df = new DecimalFormat("#.#####");
         df.setRoundingMode(RoundingMode.HALF_UP);
-        pw.println(Double.valueOf(df.format(desprobability))+","+num_of_sum+","+num_of_mul);
+        pw.print(Double.valueOf(df.format(desprobability))+","+num_of_sum+","+num_of_mul);
     }
 
-
+    /**
+     * The function calOpRec (shortage for calculate options recursively) calculates recursively all the different
+     * options for variable's outcomes in query (in consideration of given information such as evidences or query
+     * values), and puts it inside queries "ex_options" set property.
+     * @param arr - temporary array in which we're putting outcomes options.
+     * @param idx - index we're in.
+     * @param q - Query object of current query.
+     */
     public void calOpRec(String[] arr, int idx, Query q){//creates all the variable options for the query
         if (idx>=arr.length){
             q.addOption(arr); //adds the current option to a set
-            return;
         }
         else if (q.getEvidence().containsKey(this.initial_variables[idx])){ //if the variable we're checking it the query or one of the givens
             arr[idx] = q.getEvidence().get(this.initial_variables[idx]);
@@ -58,12 +80,17 @@ public class SimpleConc extends BaysianNetwork{
         }
     }
 
+    /**
+     * The function iterates through all the different variable outcomes combinations and sums the probabilities.
+     * @param q - Query object of current query.
+     * @return sum of all probabilities in this set of options.
+     */
     public double calculateOpInQuery(Query q){
-        Iterator options = q.getEx_options().iterator();
+        Iterator<String[]> options = q.getEx_options().iterator();
         double sum = 0;
         while (options.hasNext()){ //iterates through the combinations in the option
             double cur_combination = 1;
-            String[] option = (String[]) options.next();
+            String[] option = options.next();
             Enumeration<String> keys = initial_CPTs.keys();
             while (keys.hasMoreElements()){ //gets the probability of each combination and multiples them
                 String key = keys.nextElement();
@@ -76,13 +103,32 @@ public class SimpleConc extends BaysianNetwork{
         num_of_sum--;
         return sum;
     }
+
+    /**
+     * The function calculates probability options, but with a different value for query itself.
+     * @param q - Query object of current query.
+     * @param query_idx - index of query in variables.
+     * @param value_idx - the index of new value for query we want to calculate with
+     * @return sum of all probabilities in this set of options (this set of options was changed to the new
+     * value of query we wanted).
+     */
     public double calculateOpposite(Query q, int query_idx, int value_idx){
         q.changeOptions(query_idx, this.initial_varopls[query_idx][value_idx]);
         return calculateOpInQuery(q);
     }
 
+    /**
+     * The function gets a combination of values it has to get its probability from the CPT, then finds it
+     * using "basePosition" method.
+     * @param S - name of CPT.
+     * @param arr - CPT.
+     * @param option - which option we want to find (option=outcomes option of variables).
+     * @param cur_combination - all the probabilities we multiplied so far
+     * @return the probability of the current combination (the value in the CPT we found) multiplied by
+     * all the previous combinations calculated for a specific probability (cur_combination param)
+     */
     public double getP(String S, Double[] arr, String[] option, double cur_combination) {
-        int var_idx = 0;
+        int var_idx;
         String[] vars_inCPT = S.split("[| -,]"); //array of variables involved
         if (vars_inCPT.length == 1) {
             var_idx = findIndex(initial_variables, S); //finds the index of variable
@@ -95,7 +141,8 @@ public class SimpleConc extends BaysianNetwork{
         }
         else{//CPT name is bigger than 1, which means there are givens
             int offset=0;
-            for(int var = 1; var < vars_inCPT.length; var++){ //iterates through variables involved, excluding the "main" var of the CPT
+            for(int var = 1; var < vars_inCPT.length; var++){ //iterates through variables involved, excluding the "main" var of the CPT,
+                // cause it always appears first but its change rate is the fastest.
                 var_idx = findIndex(initial_variables, vars_inCPT[var]); //gets the index of variable
                 for (int i = 0; i < initial_varopls[var_idx].length; i++) {
                     if (initial_varopls[var_idx][i].equals(option[var_idx])) { //finds the position of wanted value
@@ -115,19 +162,6 @@ public class SimpleConc extends BaysianNetwork{
         return cur_combination;
     }
 
-    private int basePosition(String[] vars_inCPT, int start_index){
-        int mul = initial_varOutcomes.get(vars_inCPT[0]);//can't forget the first variable (the main, which is the first in cpt)
-        for (int i = start_index; i < vars_inCPT.length; i++) {
-            mul*=initial_varOutcomes.get(vars_inCPT[i]);
-        }
-        return mul;
-    }
-    public void cleanOp() {
-        this.num_of_sum = 0;
-        this.num_of_mul = 0;
-    }
 }
 
-/*
-להוסיף - מה קורה אם זה בדיוק תא בטבלה, פשוט תשלוף את זה
- */
+

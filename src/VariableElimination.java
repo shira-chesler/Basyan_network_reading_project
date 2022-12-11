@@ -4,15 +4,29 @@ import java.util.*;
 import static java.lang.Double.parseDouble;
 import static java.util.Arrays.copyOfRange;
 
-public class VariableElimination extends BaysianNetwork{
+public class VariableElimination extends BayesianNetwork {
     protected String[] variables;
     protected Hashtable<String, Integer> varOutcomes;
     protected Hashtable<String, Double[]> CPTs;
     protected String[][] varopls;
     protected int factor_num=1;
+
+    /**
+     *
+     * @param varOutcomes
+     * @param CPTs
+     * @param variables
+     * @param varopls
+     * @param pw
+     */
     public VariableElimination(Hashtable<String, Integer> varOutcomes, Hashtable<String, Double[]> CPTs, String[] variables, String[][] varopls, PrintWriter pw) {
         super(varOutcomes, CPTs, variables, varopls, pw);
     }
+
+    /**
+     *
+     * @param ourq
+     */
     protected void getRid(Query ourq){ //the function removes all the variables that aren't predecessors of query or evidence
         String[] in_op = new String[this.variables.length];
         int num_of_vars=0; //counter to know the number of wanted variable
@@ -73,6 +87,11 @@ public class VariableElimination extends BaysianNetwork{
         this.varopls = varop;
     } //getRid lexicographically sorts the variables
 
+    /**
+     *
+     * @param s
+     * @return
+     */
     protected int asciiSumOfCPT(String s) {
         StringTokenizer parts = new StringTokenizer(s, " ,|=");
         int ascii_sum = 0;
@@ -85,13 +104,20 @@ public class VariableElimination extends BaysianNetwork{
         return ascii_sum;
     }
 
+    /**
+     *
+     * @param ourq
+     * @param varname
+     * @param factors
+     * @return
+     */
     protected HashMap<String, String[][]> join(Query ourq, String varname, HashMap<String, String[][]> factors){
-        HashSet factorswithvar = factorsWithVar(varname, factors); //contains the names of the cpts with the var
+        HashSet<String> factorswithvar = factorsWithVar(varname, factors); //contains the names of the cpts with the var
         int size = factorswithvar.size();
         String[][] namesizefactors = new String[size][3];
-        Iterator iter = factorswithvar.iterator();
+        Iterator<String> iter = factorswithvar.iterator();
         for (int i = 0; i < namesizefactors.length; i++) {
-            namesizefactors[i][0] = (String) iter.next(); //name of cpt
+            namesizefactors[i][0] = iter.next(); //name of cpt
             namesizefactors[i][1] = String.valueOf(factors.get(namesizefactors[i][0]).length);//length of cpt
             namesizefactors[i][2] = String.valueOf(asciiSumOfCPT(namesizefactors[i][0]));//ascii sum of vars in cpt
         }
@@ -119,43 +145,45 @@ public class VariableElimination extends BaysianNetwork{
         return factors;
     }
 
-    protected HashMap<String, String[][]> createFactorsBeforeInitialize(Query ourq, String[][] namesizecpts) {
+    /**
+     *
+     * @param namesizecpts
+     * @return
+     */
+    protected HashMap<String, String[][]> createFactorsBeforeInitialize(String[][] namesizecpts) {
         HashMap<String, String[][]> factors = new HashMap<>();
-        for (int i = 0; i < namesizecpts.length; i++) {
-            String cur_CPT_name = namesizecpts[i][0];
-            StringBuilder sb = new StringBuilder(cur_CPT_name);
-            sb.append(",-f"+factor_num);
+        for (String[] namesizecpt : namesizecpts) {
+            String cur_CPT_name = namesizecpt[0];
+            String name = cur_CPT_name + ",-f" + factor_num;
             factor_num++;
-            String name = sb.toString();
-            //int num_of_vars = findNumOfVarsInCPT(cur_CPT_name);
             int num_of_vars = numOfVarsIn(cur_CPT_name);
-            int length = this.CPTs.get(cur_CPT_name).length+1;
-            String[][] arr = new String[length][num_of_vars+1];
+            int length = this.CPTs.get(cur_CPT_name).length + 1;
+            String[][] arr = new String[length][num_of_vars + 1];
             StringTokenizer st = new StringTokenizer(cur_CPT_name, "| -,");
-            arr[0][arr[0].length-1] = "Probability";
-            arr[0][arr[0].length-2] = st.nextToken();
-            for (int j = 0; j < arr[0].length-2; j++) {//puts the names of the vars in factor
+            arr[0][arr[0].length - 1] = "Probability";
+            arr[0][arr[0].length - 2] = st.nextToken();
+            for (int j = 0; j < arr[0].length - 2; j++) {//puts the names of the vars in factor
                 arr[0][j] = st.nextToken();
             }
-            String var = arr[0][arr[0].length-2];
+            String var = arr[0][arr[0].length - 2];
             int change_rate = this.varOutcomes.get(var);
             int idx = findIndex(this.variables, var);
-            for (int j = 1; j < length; j++){ //assigns the column of the vars that's its' table
-                arr[j][arr[0].length-2] = varopls[idx][(j-1)%(change_rate)];
+            for (int j = 1; j < length; j++) { //assigns the column of the vars that's its' table
+                arr[j][arr[0].length - 2] = varopls[idx][(j - 1) % (change_rate)];
             }
-            for (int j = 1; j < length; j++){ //assigns the probability column
-                arr[j][arr[0].length-1] = String.valueOf(CPTs.get(cur_CPT_name)[j-1]);
+            for (int j = 1; j < length; j++) { //assigns the probability column
+                arr[j][arr[0].length - 1] = String.valueOf(CPTs.get(cur_CPT_name)[j - 1]);
             }
-            for (int j = 0; j < num_of_vars-1; j++) {//assigns the rest of the table
+            for (int j = 0; j < num_of_vars - 1; j++) {//assigns the rest of the table
                 var = arr[0][j];
-                change_rate = basePosition(arr[0], j+1,arr[0].length-2, arr[0].length-2);
+                change_rate = basePosition(arr[0], j + 1, arr[0].length - 2, arr[0].length - 2);
                 idx = findIndex(this.variables, var);
-                int tillchange=0;
-                int numvalue=0;
+                int tillchange = 0;
+                int numvalue = 0;
                 for (int k = 1; k < length; k++) {
-                    if (tillchange==change_rate){
-                        tillchange=0;
-                        numvalue=(numvalue+1)%this.varOutcomes.get(var);
+                    if (tillchange == change_rate) {
+                        tillchange = 0;
+                        numvalue = (numvalue + 1) % this.varOutcomes.get(var);
                     }
                     arr[k][j] = varopls[idx][numvalue];
                     tillchange++;
@@ -166,19 +194,22 @@ public class VariableElimination extends BaysianNetwork{
         return factors;
     }
 
+    /**
+     *
+     * @param ourq
+     * @param factors
+     * @return
+     */
     protected HashMap<String, String[][]> placeEvidence(Query ourq, HashMap<String, String[][]> factors){
         HashMap<String, String[][]> factors_tmp = (HashMap<String, String[][]>) factors.clone();
         factors_tmp.forEach((name, table) ->
         {
-            HashSet evidences = new HashSet(ourq.getEvidence().keySet());
             String[] evidence_values = new String[table[0].length];
-            HashSet shared_columns = new HashSet();
-            //int num_of_evidences_in_table = 0;
+            HashSet<Integer> shared_columns = new HashSet<>();
             int num_of_row_to_div = 1; //later, we'll divide by the options of the evidences - cause we need only one option, which is given
             for (int i = 0; i < table[0].length; i++) {
                 if (ourq.getEvidence().containsKey(table[0][i])){ //in this column in table we have evidence
                     evidence_values[i] = ourq.getEvidence().get(table[0][i]);//the value for this column
-                    //num_of_evidences_in_table++;
                     num_of_row_to_div*=varOutcomes.get(table[0][i]);
                     shared_columns.add(i);
                 }
@@ -199,6 +230,11 @@ public class VariableElimination extends BaysianNetwork{
         return factors;
     }
 
+    /**
+     *
+     * @param name
+     * @return
+     */
     protected int numOfVarsIn(String name){
         int varnum = 0;
         StringTokenizer parts = new StringTokenizer(name, " ,|=");
@@ -209,6 +245,41 @@ public class VariableElimination extends BaysianNetwork{
         return varnum;
     }
 
+    /**
+     *
+     * @param ourq
+     * @param factora
+     * @param factorb
+     * @return
+     */
+    protected String newFactorName(Query ourq, String factora, String factorb) {
+        HashSet<String>[] comdif = commonDiffVars(ourq, factora, factorb);
+        StringBuilder sb = new StringBuilder();
+        for (String s : comdif[1]) {
+            if (ourq.getEvidence().containsKey(s) || s.contains("-f")) {
+                continue;
+            }
+            sb.append(s).append(",");
+        }
+        for (String s : comdif[0]){
+            if (ourq.getEvidence().containsKey(s) || s.contains("-f")) {
+                continue;
+            }
+            sb.append(s).append(",");
+        }
+        sb.append("-f").append(factor_num);
+        factor_num++;
+        return sb.toString();
+    }
+
+    /**
+     *
+     * @param vars_inCPT
+     * @param start_index
+     * @param end_index
+     * @param first_position
+     * @return
+     */
     private int basePosition(String[] vars_inCPT, int start_index, int end_index, int first_position){
         int mul = varOutcomes.get(vars_inCPT[first_position]);//can't forget the first variable (the main, which is the first in cpt)
         for (int i = start_index; i < end_index; i++) {
@@ -217,21 +288,33 @@ public class VariableElimination extends BaysianNetwork{
         return mul;
     }
 
-    private boolean compareOnlyByGivenCols(String[] a, String[] b, HashSet GivenCols){
+    /**
+     *
+     * @param a
+     * @param b
+     * @param GivenCols
+     * @return
+     */
+    private boolean compareOnlyByGivenCols(String[] a, String[] b, HashSet<Integer> GivenCols){
         boolean bool =true;
-        Iterator iter = GivenCols.iterator();
-        while (iter.hasNext()){
-            int col = (int) iter.next();
-            if (!a[col].equals(b[col])){
-                bool=false;
+        for (Integer givenCol : GivenCols) {
+            int col = givenCol;
+            if (!a[col].equals(b[col])) {
+                bool = false;
                 break;
             }
         }
         return bool;
     }
 
-    protected HashSet factorsWithVar(String varname, HashMap<String, String[][]> factors){
-        HashSet namesfactorswithvar = new HashSet();
+    /**
+     *
+     * @param varname
+     * @param factors
+     * @return
+     */
+    protected HashSet<String> factorsWithVar(String varname, HashMap<String, String[][]> factors){
+        HashSet<String> namesfactorswithvar = new HashSet<>();
         factors.forEach((name, table) ->
         {
             if (contains(name, varname)!=0){
@@ -241,6 +324,11 @@ public class VariableElimination extends BaysianNetwork{
         return namesfactorswithvar;
     }
 
+    /**
+     *
+     * @param namesizecpts
+     * @param indexstart
+     */
     protected void sortBySizeThenAscii(String[][] namesizecpts, int indexstart){//sort the cpts by size
         java.util.Arrays.sort(namesizecpts, indexstart, namesizecpts.length, (a, b) ->
                 Integer.compare(Integer.parseInt(a[1]), Integer.parseInt(b[1])));
@@ -257,6 +345,14 @@ public class VariableElimination extends BaysianNetwork{
         }
     }
 
+    /**
+     *
+     * @param ourq
+     * @param factors
+     * @param factora
+     * @param factorb
+     * @return
+     */
     protected String[][] createNewFactor(Query ourq, HashMap<String, String[][]> factors, String factora, String factorb){
         HashSet<String>[] comdif = commonDiffVars(ourq, factora, factorb);
         String name = newFactorName(ourq, factora, factorb);
@@ -293,15 +389,24 @@ public class VariableElimination extends BaysianNetwork{
         }
         for (int i = 1; i < length+1; i++) {
             newfactor[i][newfactor[0].length-1] = String.valueOf(
-                    getCell(ourq, factors.get(factora), newfactor[0], newfactor[i], 0, newfactor[i].length-1)
-                            * getCell(ourq, factors.get(factorb), newfactor[0], newfactor[i], 0, newfactor[i].length-1));
+                    getCell(ourq, factors.get(factora), newfactor[0], newfactor[i], newfactor[i].length-1)
+                            * getCell(ourq, factors.get(factorb), newfactor[0], newfactor[i], newfactor[i].length-1));
             this.num_of_mul++;
         }
         return newfactor;
     }
 
-    private double getCell(Query ourq, String[][] fact, String[] varsinfact, String[] values, int start_idx, int end_idx) {
-        HashSet evidence_loc = new HashSet();
+    /**
+     *
+     * @param ourq
+     * @param fact
+     * @param varsinfact
+     * @param values
+     * @param end_idx
+     * @return
+     */
+    private double getCell(Query ourq, String[][] fact, String[] varsinfact, String[] values, int end_idx) {
+        HashSet<Integer> evidence_loc = new HashSet<>();
         for (int i = 0; i < fact[0].length; i++) {
             if(ourq.getEvidence().containsKey(fact[0][i])){
                 evidence_loc.add(i);//saves all the positions of the evidences in the original factor
@@ -309,7 +414,7 @@ public class VariableElimination extends BaysianNetwork{
         }
         String[] values_to_search = new String[fact[0].length];
         int idx;
-        for (int i = start_idx; i < end_idx; i++) {
+        for (int i = 0; i < end_idx; i++) {
             idx=findIndex(fact[0], varsinfact[i]); //searches for the position of variables in the factor
             if (idx==-1){ //didn't find position
                 continue;
@@ -326,7 +431,14 @@ public class VariableElimination extends BaysianNetwork{
         return cell_value;
     }
 
-    private boolean CompareArrayIgnoringEvidence(String[] withoutevifacor, String[] withevifactor, HashSet evidenceLoc) {
+    /**
+     *
+     * @param withoutevifacor
+     * @param withevifactor
+     * @param evidenceLoc
+     * @return
+     */
+    private boolean CompareArrayIgnoringEvidence(String[] withoutevifacor, String[] withevifactor, HashSet<Integer> evidenceLoc) {
         boolean b = true;
         for (int j = 0; j < withevifactor.length; j++) {
             if(evidenceLoc.contains(j)){
@@ -340,35 +452,19 @@ public class VariableElimination extends BaysianNetwork{
         return b;
     }
 
-    protected String newFactorName(Query ourq, String factora, String factorb) {
-        HashSet<String>[] comdif = commonDiffVars(ourq, factora, factorb);
-        StringBuilder sb = new StringBuilder();
-        Iterator com = comdif[0].iterator();
-        Iterator dif = comdif[1].iterator();
-        while (dif.hasNext()){
-            String s = (String) dif.next();
-            if (ourq.getEvidence().containsKey(s) || s.contains("-f")) {
-                continue;
-            }
-            sb.append(s+",");
-        }
-        while (com.hasNext()){
-            String s = (String) com.next();
-            if (ourq.getEvidence().containsKey(s) || s.contains("-f")) {
-                continue;
-            }
-            sb.append(s+",");
-        }
-        sb.append("-f"+factor_num);
-        factor_num++;
-        return sb.toString();
-    }
 
+    /**
+     *
+     * @param ourq
+     * @param cpt1
+     * @param cpt2
+     * @return
+     */
     private HashSet<String>[] commonDiffVars(Query ourq, String cpt1, String cpt2){
         HashSet<String>[] commondiff = new HashSet[2];
         commondiff[0] = new HashSet<>();
         commondiff[1] = new HashSet<>();
-        StringTokenizer parts = new StringTokenizer(cpt1, " ,|= ");
+        StringTokenizer parts = new StringTokenizer(cpt1, " ,|=");
         while (parts.hasMoreTokens()){
             String s = parts.nextToken();
             if (s.contains("-f") || ourq.getEvidence().containsKey(s)){
@@ -394,20 +490,27 @@ public class VariableElimination extends BaysianNetwork{
         return commondiff;
     }
 
+    /**
+     *
+     * @param ourq
+     * @param fact1
+     * @param fact2
+     * @return
+     */
     private int findNewFactorSize(Query ourq, String fact1, String fact2){
         HashSet<String>[] comndif = commonDiffVars(ourq, fact1, fact2);
-        Iterator iter_com = comndif[0].iterator();
-        Iterator iter_dif = comndif[1].iterator();
+        Iterator<String> iter_com = comndif[0].iterator();
+        Iterator<String> iter_dif = comndif[1].iterator();
         int new_cpt_size=1;
         while (iter_com.hasNext()){
-            String s = (String) iter_com.next();
+            String s = iter_com.next();
             if (ourq.getEvidence().containsKey(s) || s.contains("-f")){
                 continue;
             }
             new_cpt_size*= varOutcomes.get(s);
         }
         while (iter_dif.hasNext()){
-            String s = (String) iter_dif.next();
+            String s = iter_dif.next();
             if (ourq.getEvidence().containsKey(s)|| s.contains("-f")){
                 continue;
             }
@@ -416,6 +519,13 @@ public class VariableElimination extends BaysianNetwork{
         return new_cpt_size;
     }
 
+    /**
+     *
+     * @param ourq
+     * @param final_factor
+     * @param varname
+     * @return
+     */
     private String[][] marginalizeByVar(Query ourq, String[][] final_factor, String varname){
         int col_num = findIndex(final_factor[0], varname);
         String[] sum_together = new String[final_factor[0].length-1];
@@ -435,7 +545,7 @@ public class VariableElimination extends BaysianNetwork{
             capacity++;
         }
         int loc=1;//line
-        HashSet taken = new HashSet();
+        HashSet<Integer> taken = new HashSet<>();
         capacity=0;
         while (loc<final_factor.length){
             if (taken.contains(loc)){
@@ -475,7 +585,7 @@ public class VariableElimination extends BaysianNetwork{
                 }
             }
             rowloc--;
-            if(b==true){
+            if(b){
                 capacity++;
                 sum_together[rowloc]= String.valueOf(sum);
                 aftermerge[capacity] = sum_together.clone();
@@ -485,6 +595,13 @@ public class VariableElimination extends BaysianNetwork{
         return aftermerge;
     }
 
+    /**
+     *
+     * @param sumTogether
+     * @param strings
+     * @param colNum
+     * @return
+     */
     private boolean compareWithoutCol(String[] sumTogether, String[] strings, int colNum) {
         boolean b = true;
         int j = 0;
