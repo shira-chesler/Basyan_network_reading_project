@@ -178,11 +178,11 @@ public class BayesianNetwork {
     }
 
     /**
-     * the function multiplies the number of outcomes of each one of the variables the changes "faster"
-     * then vars_inCPT[start_index-1] in CPT. this number gives us the change rate of vars_inCPT[start_index-1].
+     * The function multiplies the number of outcomes of each one of the variables the changes "faster"
+     * then vars_inCPT[start_index-1] in CPT. This number gives us the change rate of vars_inCPT[start_index-1].
      * @param vars_inCPT - array of the vars in the CPT.
      * @param start_index - what index we want to start from (from which variable to start to calculate).
-     * @return the changing rate of values in CPT for the variable vars_inCPT[start_index-1]
+     * @return the changing rate of values in CPT for the variable vars_inCPT[start_index-1].
      */
     protected int basePosition(String[] vars_inCPT, int start_index){
         int mul = initial_varOutcomes.get(vars_inCPT[0]);//can't forget the first variable (the main, which is the first in cpt)

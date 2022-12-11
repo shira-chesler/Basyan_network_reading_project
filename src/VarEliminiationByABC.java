@@ -37,7 +37,7 @@ public class VarEliminiationByABC extends VariableElimination{
         for (int i = 0; i < namesizecpts.length; i++) {
             namesizecpts[i][0] = iter.next(); //name of cpt
             namesizecpts[i][1] = String.valueOf(this.CPTs.get(namesizecpts[i][0]).length);//length of cpt
-            namesizecpts[i][2] = String.valueOf(asciiSumOfCPT(namesizecpts[i][0]));//ascii sum of vars in cpt
+            namesizecpts[i][2] = String.valueOf(asciiSumOfFactor(namesizecpts[i][0]));//ascii sum of vars in cpt
         }
         HashMap<String, String[][]> factors = createFactorsBeforeInitialize(namesizecpts);
         factors = placeEvidence(ourq, factors);
