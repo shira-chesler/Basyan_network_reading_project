@@ -8,12 +8,13 @@ import static java.lang.Double.parseDouble;
 public class VarEliminationByHeuristic extends VariableElimination{
 
     /**
-     *
-     * @param varOutcomes
-     * @param CPTs
-     * @param variables
-     * @param varopls
-     * @param pw
+     * VarEliminiationByHeuristic (shortage for VariableEliminationByHeuristic) constructor.
+     * @param varOutcomes - HashTable of number of outcomes for each variable in the network.
+     * @param CPTs - HashTable of (so called) CPTs in the network.
+     * @param variables - array of all variables in network.
+     * @param varopls - array of array, each array contains all the possible outcomes for a specific variable,
+     *                indexed respectively to variables.
+     * @param pw - PrintWriter object.
      */
     public VarEliminationByHeuristic(Hashtable<String, Integer> varOutcomes, Hashtable<String, Double[]> CPTs, String[] variables, String[][] varopls, PrintWriter pw) {
         super(varOutcomes, CPTs, variables, varopls, pw);
@@ -24,10 +25,21 @@ public class VarEliminationByHeuristic extends VariableElimination{
     }
 
     /**
+     * The function checks if the query needs to be calculated (with queryInCPT method). If it does, it gets rid
+     * of unneeded variables with getRid method, places the evidences of the query with placeEvidence method,
+     * makes factors and then joins them by order decided by Heuristic (excluding query).
+     * Then it joins the query factor,finds the query value we want (desired probability) in the factor,
+     * and normalizes it with the query values we don't want.
+     * Finally, the function prints the normalized desired probability, the number of sums
+     * and the number of multiplications done in the whole operation.
+     * The Heuristic chosen is to start eliminate from the roots of the BayesianNetwork (roots in graph,
+     * variables with no parents) and then to continue to their sons, from there to their sons, etc. In this
+     * Heuristic we don't care where to eliminate evidence variables so without loss of generality we eliminated
+     * them in the first iteration (with the roots of the network).
+     * @param ourq - a "Query" type object, with the parameters of the query we want to calculate.
      *
-     * @param ourq
      */
-    public void variableEliminationByHuristic(Query ourq) {
+    public void variableEliminationByHeuristic(Query ourq) {
         if(queryInCPT(ourq)){
             return;
         }
@@ -38,7 +50,7 @@ public class VarEliminationByHeuristic extends VariableElimination{
         for (int i = 0; i < namesizecpts.length; i++) {
             namesizecpts[i][0] = iter.next(); //name of cpt
             namesizecpts[i][1] = String.valueOf(this.CPTs.get(namesizecpts[i][0]).length);//length of cpt
-            namesizecpts[i][2] = String.valueOf(asciiSumOfCPT(namesizecpts[i][0]));//ascii sum of vars in cpt
+            namesizecpts[i][2] = String.valueOf(asciiSumOfFactor(namesizecpts[i][0]));//ascii sum of vars in cpt
         }
         HashMap<String, String[][]> factors = createFactorsBeforeInitialize(namesizecpts);
         factors = placeEvidence(ourq, factors);
@@ -77,20 +89,22 @@ public class VarEliminationByHeuristic extends VariableElimination{
         for (int i=1; i < this.varOutcomes.get(ourq.getVar())+1; i++){
             final_facor[i][final_facor[0].length-1] = String.valueOf(parseDouble(final_facor[i][final_facor[0].length-1])/normelize_fac);
         }
-        for (int i = 0; i < final_facor.length; i++) {
-            if (final_facor[i][0].equals(ourq.getValue())){
+        for (String[] strings : final_facor) {
+            if (strings[0].equals(ourq.getValue())) {
                 DecimalFormat df = new DecimalFormat("#.#####");
                 df.setRoundingMode(RoundingMode.HALF_UP);
-                pw.print(Double.valueOf(df.format(parseDouble(final_facor[i][final_facor[0].length-1])))+","+num_of_sum+","+num_of_mul);
+                pw.print(Double.valueOf(df.format(parseDouble(strings[final_facor[0].length - 1]))) + "," + num_of_sum + "," + num_of_mul);
             }
         }
     }
 
     /**
-     *
-     * @param ourq
-     * @param calculated
-     * @return
+     * The function creates an array, such that in entrance i in the array there is the number of fathers that
+     * haven't been calculated yet of variable[i].
+     * @param ourq - a "Query" type object, with the parameters of the query we want to calculate.
+     * @param calculated - HashSet of al variables that have already been calculated.
+     * @return an array, in entrance i in the array there is the number of fathers that haven't
+     * been calculated yet of variable[i]
      */
     private int[] initializeNumImSon(Query ourq, HashSet<String> calculated) {
         int[] myFathers = new int[this.variables.length];

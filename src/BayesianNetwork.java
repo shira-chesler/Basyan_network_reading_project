@@ -53,7 +53,7 @@ public class BayesianNetwork {
             case 3:
             {
                 VarEliminationByHeuristic vebh = new VarEliminationByHeuristic(this.initial_varOutcomes, this.initial_CPTs, this.initial_variables, this.initial_varopls, this.pw);
-                vebh.variableEliminationByHuristic(ourq);
+                vebh.variableEliminationByHeuristic(ourq);
                 break;
             }
         }
